@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FastAPI: Run (venv)",
+      "type": "python",
+      "request": "launch",
+      "python": "C:\\Users\\julie\\Desktop\\transformation_app\\backend\\venv\\Scripts\\python.exe",
+      "module": "uvicorn",
+      "args": ["main:app", "--reload"],
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "jinja": true,
+      "justMyCode": true
+    }
+  ]
+}

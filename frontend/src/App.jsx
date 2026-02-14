@@ -1,3 +1,5 @@
+// Projet de suivi de transformation physique - Julien Allart
+
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
