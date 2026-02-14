@@ -1,0 +1,43 @@
+# Fichiers à ignorer par Git
+
+# Environnement virtuel
+venv/
+
+# Base de données SQLite
+*.db
+
+# Fichiers Python compilés
+__pycache__/
+*.py[cod]
+
+# Fichiers de configuration locaux
+.env
+.env.local
+.env*.local
+
+# Fichiers de dépendances
+.env.development
+.env.test
+
+# Fichiers de log
+*.log
+
+# Fichiers de cache
+*.cache
+
+# Fichiers de configuration de l'IDE
+.idea/
+.vscode/
+.DS_Store
+
+# Fichiers de build
+build/
+dist/
+
+# Fichiers de migration de base de données
+migrations/versions/*.py[cod]
+
+# Fichiers temporaires
+*.tmp
+*.swp
+*.swo
