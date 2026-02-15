@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 
 const JournalForm = ({ onJournalAdded }) => {
   const [nouvelleEntree, setNouvelleEntree] = useState({
@@ -32,7 +32,7 @@ const JournalForm = ({ onJournalAdded }) => {
         date: nouvelleEntree.date
       };
       
-      await axios.post('http://127.0.0.1:8000/journal/', formattedData);
+      await api.post('/journal/', formattedData);
       setNouvelleEntree({
         texte: '',
         date: ''

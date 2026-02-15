@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 import MensurationsForm from '../components/MensurationsForm';
 import CompleteCharts from '../components/CompleteCharts';
 
@@ -15,13 +15,13 @@ const HomePage = ({ poids, mensurations, onPoidsAdded, onMensurationsAdded }) =>
   const submitPoids = async () => {
     if (!poidsValue || !poidsDate) return;
     try {
-      await axios.post('http://127.0.0.1:8000/poids/', {
+      await api.post('/poids/', {
         valeur: parseFloat(poidsValue),
         date_mesure: poidsDate
       });
       setPoidsValue('');
       setPoidsDate('');
-      setPoidsMsg('Poids enregistre !');
+      setPoidsMsg('Poids enregistré !');
       setTimeout(() => setPoidsMsg(''), 3000);
       if (onPoidsAdded) onPoidsAdded();
     } catch (error) {
@@ -32,13 +32,13 @@ const HomePage = ({ poids, mensurations, onPoidsAdded, onMensurationsAdded }) =>
   const submitSeance = async () => {
     if (!seanceTexte || !seanceDate) return;
     try {
-      await axios.post('http://127.0.0.1:8000/journal/', {
+      await api.post('/journal/', {
         texte: seanceTexte,
         date: seanceDate
       });
       setSeanceTexte('');
       setSeanceDate('');
-      setSeanceMsg('Seance enregistree !');
+      setSeanceMsg('Séance enregistrée !');
       setTimeout(() => setSeanceMsg(''), 3000);
     } catch (error) {
       console.error('Erreur journal:', error);
@@ -74,10 +74,10 @@ const HomePage = ({ poids, mensurations, onPoidsAdded, onMensurationsAdded }) =>
 
         {/* Column 2: Derniere seance */}
         <div className="home-card">
-          <h3 className="home-card__title">Derniere seance</h3>
+          <h3 className="home-card__title">Dernière séance</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <textarea
-              placeholder="Coller le resume de seance Hevy ici..."
+              placeholder="Coller le résumé de séance Hevy ici..."
               value={seanceTexte}
               onChange={(e) => setSeanceTexte(e.target.value)}
               className="form-input"

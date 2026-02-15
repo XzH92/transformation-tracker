@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 
 const EntrainementForm = ({ onEntrainementAdded }) => {
   const [nouvelEntrainement, setNouvelEntrainement] = useState({
@@ -52,7 +52,7 @@ const EntrainementForm = ({ onEntrainementAdded }) => {
         date: nouvelEntrainement.date
       };
       
-      await axios.post('http://127.0.0.1:8000/entrainements/', formattedData);
+      await api.post('/entrainements/', formattedData);
       setNouvelEntrainement({
         exercice: '',
         series: '',

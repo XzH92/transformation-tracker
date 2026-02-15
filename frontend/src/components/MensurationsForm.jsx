@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 
 const MensurationsForm = ({ onMensurationsAdded, compact = false }) => {
   const [nouvelleMensuration, setNouvelleMensuration] = useState({
@@ -31,14 +31,14 @@ const MensurationsForm = ({ onMensurationsAdded, compact = false }) => {
           dataToSend[key] = parseFloat(dataToSend[key]);
         }
       });
-      await axios.post('http://127.0.0.1:8000/mensurations/', dataToSend);
+      await api.post('/mensurations/', dataToSend);
       setNouvelleMensuration({
         cou: '', epaules: '', poitrine: '', nombril: '', taille: '', hanches: '',
         biceps_gauche: '', biceps_droit: '', cuisse_gauche: '', cuisse_droite: '',
         mollet_gauche: '', mollet_droit: '', date_mesure: ''
       });
       setErrors({});
-      setMessage('Mensurations enregistrees !');
+      setMessage('Mensurations enregistrées !');
       setTimeout(() => setMessage(''), 3000);
       if (onMensurationsAdded) onMensurationsAdded();
     } catch (error) {

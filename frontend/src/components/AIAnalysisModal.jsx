@@ -1,27 +1,27 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 
 const ANALYSIS_TYPES = [
   {
     id: 'poids',
-    label: 'Evolution du poids',
+    label: 'Évolution du poids',
     icon: '\u2696\uFE0F',
-    description: 'Analyse ta courbe de poids recente, detecte les tendances et ajuste les recommandations.',
-    prompt: "Analyse en detail l'evolution de mon poids. Identifie les tendances (perte, prise, stagnation), les periodes de fluctuation, et donne-moi des recommandations nutritionnelles et d'entrainement pour optimiser ma progression. Sois precis avec les chiffres.",
+    description: 'Analyse ta courbe de poids récente, détecte les tendances et ajuste les recommandations.',
+    prompt: "Analyse en détail l'évolution de mon poids. Identifie les tendances (perte, prise, stagnation), les périodes de fluctuation, et donne-moi des recommandations nutritionnelles et d'entraînement pour optimiser ma progression. Sois précis avec les chiffres.",
   },
   {
     id: 'entrainement',
-    label: 'Routine d\'entrainement',
+    label: 'Routine d\'entraînement',
     icon: '\uD83C\uDFCB\uFE0F',
-    description: 'Analyse tes seances passees et propose la prochaine routine adaptee.',
-    prompt: "Analyse mes seances d'entrainement recentes. Identifie les groupes musculaires travailles, la progression des charges, le volume d'entrainement. Propose-moi une planification pour ma prochaine seance en tenant compte de la recuperation, de l'equilibre musculaire et de la surcharge progressive. Sois concret avec les exercices, series, reps et charges suggerees.",
+    description: 'Analyse tes séances passées et propose la prochaine routine adaptée.',
+    prompt: "Analyse mes séances d'entraînement récentes. Identifie les groupes musculaires travaillés, la progression des charges, le volume d'entraînement. Propose-moi une planification pour ma prochaine séance en tenant compte de la récupération, de l'équilibre musculaire et de la surcharge progressive. Sois concret avec les exercices, séries, reps et charges suggérées.",
   },
   {
     id: 'general',
-    label: 'Bilan general',
+    label: 'Bilan général',
     icon: '\uD83D\uDCCA',
-    description: 'Analyse croisee de toutes les donnees pour un bilan complet.',
-    prompt: "Fais un bilan general complet de ma transformation physique en croisant toutes les donnees : poids, mensurations, entrainements et journal. Evalue si mon plan de transformation fonctionne bien globalement. Identifie les correlations (ex: impact de l'entrainement sur les mensurations, lien sommeil/performance). Donne un score de progression et des axes d'amelioration prioritaires.",
+    description: 'Analyse croisée de toutes les données pour un bilan complet.',
+    prompt: "Fais un bilan général complet de ma transformation physique en croisant toutes les données : poids, mensurations, entraînements et journal. Évalue si mon plan de transformation fonctionne bien globalement. Identifie les corrélations (ex: impact de l'entraînement sur les mensurations, lien sommeil/performance). Donne un score de progression et des axes d'amélioration prioritaires.",
   },
 ];
 
@@ -38,12 +38,12 @@ const AIAnalysisModal = ({ isOpen, onClose }) => {
     setAnalysisResult(null);
 
     try {
-      const response = await axios.post('http://127.0.0.1:8000/analyse/', {
+      const response = await api.post('/analyse/', {
         user_prompt: type.prompt,
       });
       setAnalysisResult(response.data.analyse);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erreur lors de l\'analyse. Veuillez reessayer.');
+      setError(err.response?.data?.detail || 'Erreur lors de l\'analyse. Veuillez réessayer.');
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +100,7 @@ const AIAnalysisModal = ({ isOpen, onClose }) => {
         {isLoading && (
           <div style={styles.loadingContainer}>
             <div style={styles.spinner} />
-            <p style={styles.loadingText}>Mistral analyse tes donnees...</p>
+            <p style={styles.loadingText}>Mistral analyse tes données...</p>
             <p style={styles.loadingSubtext}>
               {ANALYSIS_TYPES.find((t) => t.id === selectedType)?.label}
             </p>
@@ -112,7 +112,7 @@ const AIAnalysisModal = ({ isOpen, onClose }) => {
           <div style={styles.body}>
             <div style={styles.errorBox}>{error}</div>
             <button style={styles.retryBtn} onClick={() => { setError(null); setSelectedType(null); }}>
-              Reessayer
+              Réessayer
             </button>
           </div>
         )}
