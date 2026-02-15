@@ -244,7 +244,7 @@ app = FastAPI(
 
 # Configuration CORS - origines depuis variable d'environnement
 from fastapi.middleware.cors import CORSMiddleware
-cors_origins = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:5173").split(",")
+cors_origins = os.getenv("CORS_ALLOW_ORIGINS", "https://localhost:5173,http://localhost:5173").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -949,3 +949,25 @@ async def analyse(
             "journal_count": len(journal_entries),
         },
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    from pathlib import Path
+
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+
+    certs_dir = Path(__file__).resolve().parent.parent / "certs"
+    ssl_keyfile = certs_dir / "key.pem"
+    ssl_certfile = certs_dir / "cert.pem"
+
+    ssl_kwargs = {}
+    if ssl_certfile.exists() and ssl_keyfile.exists():
+        ssl_kwargs["ssl_keyfile"] = str(ssl_keyfile)
+        ssl_kwargs["ssl_certfile"] = str(ssl_certfile)
+        logger.info("HTTPS activé avec les certificats de %s", certs_dir)
+    else:
+        logger.warning("Certificats SSL non trouvés dans %s — démarrage en HTTP", certs_dir)
+
+    uvicorn.run("main:app", host=host, port=port, reload=True, **ssl_kwargs)

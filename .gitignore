@@ -10,6 +10,9 @@ backend/transformation.db
 backend/.env
 frontend/.env
 
+# Certificats SSL (clés privées)
+certs/*.pem
+
 # Base de données
 *.db
 
