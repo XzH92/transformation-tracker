@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const PoidsForm = ({ onPoidsAdded }) => {
   const [nouveauPoids, setNouveauPoids] = useState({ valeur: '', date_mesure: '' });
@@ -10,7 +11,7 @@ const PoidsForm = ({ onPoidsAdded }) => {
         valeur: parseFloat(nouveauPoids.valeur),
         date_mesure: nouveauPoids.date_mesure,
       };
-      await axios.post('http://127.0.0.1:8000/poids/', formattedData);
+      await axios.post(`${API_BASE_URL}/poids/`, formattedData);
       setNouveauPoids({ valeur: '', date_mesure: '' });
       if (onPoidsAdded) {
         onPoidsAdded();

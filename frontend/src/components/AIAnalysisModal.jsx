@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const ANALYSIS_TYPES = [
   {
@@ -38,7 +39,7 @@ const AIAnalysisModal = ({ isOpen, onClose }) => {
     setAnalysisResult(null);
 
     try {
-      const response = await axios.post('http://127.0.0.1:8000/analyse/', {
+      const response = await axios.post(`${API_BASE_URL}/analyse/`, {
         user_prompt: type.prompt,
       });
       setAnalysisResult(response.data.analyse);

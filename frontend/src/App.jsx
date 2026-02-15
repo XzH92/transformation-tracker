@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { API_BASE_URL } from './config';
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
 
@@ -24,7 +25,7 @@ function App() {
 
   const fetchPoids = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/poids/');
+      const response = await axios.get(`${API_BASE_URL}/poids/`);
       setPoids(response.data.poids);
     } catch (error) {
       console.error("Erreur lors de la recuperation des poids :", error);
@@ -33,7 +34,7 @@ function App() {
 
   const fetchMensurations = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/mensurations/');
+      const response = await axios.get(`${API_BASE_URL}/mensurations/`);
       setMensurations(response.data.mensurations);
     } catch (error) {
       console.error("Erreur lors de la recuperation des mensurations :", error);
@@ -42,7 +43,7 @@ function App() {
 
   const fetchEntrainements = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/entrainements/');
+      const response = await axios.get(`${API_BASE_URL}/entrainements/`);
       setEntrainements(response.data.entrainements);
     } catch (error) {
       console.error("Erreur lors de la recuperation des entrainements :", error);
@@ -51,7 +52,7 @@ function App() {
 
   const fetchSupplements = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/supplements/');
+      const response = await axios.get(`${API_BASE_URL}/supplements/`);
       setSupplements(response.data.supplements);
     } catch (error) {
       console.error("Erreur lors de la recuperation des supplements :", error);
