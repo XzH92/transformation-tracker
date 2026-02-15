@@ -126,7 +126,7 @@ const EntrainementPage = ({ entrainements, onEntrainementAdded }) => {
                 <div className="routine-card__actions">
                   {!isEditing ? (
                     <button onClick={() => startEditing(nom)} style={smallBtnStyle('#2196F3')}>
-                      Editer
+                      Éditer
                     </button>
                   ) : (
                     <>
@@ -183,11 +183,11 @@ const EntrainementPage = ({ entrainements, onEntrainementAdded }) => {
                   </table>
                 </div>
               ) : (
-                <p style={{ color: '#999', fontSize: '13px', fontStyle: 'italic' }}>Aucun exercice defini</p>
+                <p style={{ color: '#999', fontSize: '13px', fontStyle: 'italic' }}>Aucun exercice défini</p>
               )}
               {routine && routine.updated_at && (
                 <p style={{ fontSize: '11px', color: '#aaa', marginTop: '8px', marginBottom: 0 }}>
-                  Mis a jour le {new Date(routine.updated_at).toLocaleDateString('fr-FR')}
+                  Mis à jour le {new Date(routine.updated_at).toLocaleDateString('fr-FR')}
                 </p>
               )}
             </div>
@@ -197,13 +197,14 @@ const EntrainementPage = ({ entrainements, onEntrainementAdded }) => {
 
       {/* Saisie rapide */}
       <h2 style={{ margin: '0 0 16px 0', color: '#333' }}>Saisie rapide</h2>
+
       <EntrainementForm onEntrainementAdded={onEntrainementAdded} />
 
       {/* Historique */}
-      <h2 style={{ margin: '30px 0 16px 0', color: '#333' }}>Historique des seances</h2>
+      <h2 style={{ margin: '30px 0 16px 0', color: '#333' }}>Historique des séances</h2>
       <div className="entrainement-history">
         {Object.keys(groupedEntrainements).length === 0 ? (
-          <p style={{ color: '#999', fontStyle: 'italic' }}>Aucun entrainement enregistre</p>
+          <p style={{ color: '#999', fontStyle: 'italic' }}>Aucun entraînement enregistré</p>
         ) : (
           Object.entries(groupedEntrainements).slice(0, 10).map(([dateStr, exos]) => (
             <div key={dateStr} style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #f0f0f0' }}>
