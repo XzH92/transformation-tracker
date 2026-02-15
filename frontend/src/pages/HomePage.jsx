@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 import MensurationsForm from '../components/MensurationsForm';
 import CompleteCharts from '../components/CompleteCharts';
 
@@ -15,7 +16,7 @@ const HomePage = ({ poids, mensurations, onPoidsAdded, onMensurationsAdded }) =>
   const submitPoids = async () => {
     if (!poidsValue || !poidsDate) return;
     try {
-      await axios.post('http://127.0.0.1:8000/poids/', {
+      await axios.post(`${API_BASE_URL}/poids/`, {
         valeur: parseFloat(poidsValue),
         date_mesure: poidsDate
       });
@@ -32,7 +33,7 @@ const HomePage = ({ poids, mensurations, onPoidsAdded, onMensurationsAdded }) =>
   const submitSeance = async () => {
     if (!seanceTexte || !seanceDate) return;
     try {
-      await axios.post('http://127.0.0.1:8000/journal/', {
+      await axios.post(`${API_BASE_URL}/journal/`, {
         texte: seanceTexte,
         date: seanceDate
       });

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from './config';
 import CompleteCharts from './components/CompleteCharts';
 import AIAnalysisModal from './components/AIAnalysisModal';
 
@@ -19,7 +20,7 @@ const StatisticsPage = () => {
       
       // Récupérer les poids
       try {
-        const poidsResponse = await axios.get('http://127.0.0.1:8000/poids/');
+        const poidsResponse = await axios.get(`${API_BASE_URL}/poids/`);
         setPoids(poidsResponse.data.poids || []);
       } catch (poidsError) {
         console.error("Erreur lors de la récupération des poids :", poidsError);
@@ -28,7 +29,7 @@ const StatisticsPage = () => {
       
       // Récupérer les mensurations
       try {
-        const mensurationsResponse = await axios.get('http://127.0.0.1:8000/mensurations/');
+        const mensurationsResponse = await axios.get(`${API_BASE_URL}/mensurations/`);
         setMensurations(mensurationsResponse.data.mensurations || []);
       } catch (mensurationsError) {
         console.error("Erreur lors de la récupération des mensurations :", mensurationsError);

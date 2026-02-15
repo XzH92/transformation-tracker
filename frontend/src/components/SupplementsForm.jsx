@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const SupplementsForm = ({ onSupplementAdded }) => {
   const [nouveauSupplement, setNouveauSupplement] = useState({
@@ -39,7 +40,7 @@ const SupplementsForm = ({ onSupplementAdded }) => {
         date_debut: nouveauSupplement.date_debut
       };
       
-      await axios.post('http://127.0.0.1:8000/supplements/', formattedData);
+      await axios.post(`${API_BASE_URL}/supplements/`, formattedData);
       setNouveauSupplement({
         nom: '',
         dose: '',
