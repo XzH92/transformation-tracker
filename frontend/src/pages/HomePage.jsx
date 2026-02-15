@@ -22,7 +22,7 @@ const HomePage = ({ poids, mensurations, onPoidsAdded, onMensurationsAdded }) =>
       });
       setPoidsValue('');
       setPoidsDate('');
-      setPoidsMsg('Poids enregistre !');
+      setPoidsMsg('Poids enregistré !');
       setTimeout(() => setPoidsMsg(''), 3000);
       if (onPoidsAdded) onPoidsAdded();
     } catch (error) {
@@ -39,7 +39,7 @@ const HomePage = ({ poids, mensurations, onPoidsAdded, onMensurationsAdded }) =>
       });
       setSeanceTexte('');
       setSeanceDate('');
-      setSeanceMsg('Seance enregistree !');
+      setSeanceMsg('Séance enregistrée !');
       setTimeout(() => setSeanceMsg(''), 3000);
     } catch (error) {
       console.error('Erreur journal:', error);
@@ -75,10 +75,10 @@ const HomePage = ({ poids, mensurations, onPoidsAdded, onMensurationsAdded }) =>
 
         {/* Column 2: Derniere seance */}
         <div className="home-card">
-          <h3 className="home-card__title">Derniere seance</h3>
+          <h3 className="home-card__title">Dernière séance</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <textarea
-              placeholder="Coller le resume de seance Hevy ici..."
+              placeholder="Coller le résumé de séance Hevy ici..."
               value={seanceTexte}
               onChange={(e) => setSeanceTexte(e.target.value)}
               className="form-input"

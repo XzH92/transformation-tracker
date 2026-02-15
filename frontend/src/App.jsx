@@ -28,7 +28,7 @@ function App() {
       const response = await axios.get(`${API_BASE_URL}/poids/`);
       setPoids(response.data.poids);
     } catch (error) {
-      console.error("Erreur lors de la recuperation des poids :", error);
+      console.error("Erreur lors de la récupération des poids :", error);
     }
   };
 
@@ -37,7 +37,7 @@ function App() {
       const response = await axios.get(`${API_BASE_URL}/mensurations/`);
       setMensurations(response.data.mensurations);
     } catch (error) {
-      console.error("Erreur lors de la recuperation des mensurations :", error);
+      console.error("Erreur lors de la récupération des mensurations :", error);
     }
   };
 
@@ -46,7 +46,7 @@ function App() {
       const response = await axios.get(`${API_BASE_URL}/entrainements/`);
       setEntrainements(response.data.entrainements);
     } catch (error) {
-      console.error("Erreur lors de la recuperation des entrainements :", error);
+      console.error("Erreur lors de la récupération des entraînements :", error);
     }
   };
 
@@ -55,7 +55,7 @@ function App() {
       const response = await axios.get(`${API_BASE_URL}/supplements/`);
       setSupplements(response.data.supplements);
     } catch (error) {
-      console.error("Erreur lors de la recuperation des supplements :", error);
+      console.error("Erreur lors de la récupération des suppléments :", error);
     }
   };
 
@@ -68,7 +68,7 @@ function App() {
 
   const tabs = [
     { id: 'home', label: 'Home' },
-    { id: 'entrainement', label: 'Entrainement' },
+    { id: 'entrainement', label: 'Entraînement' },
     { id: 'nutrition', label: 'Nutrition' },
   ];
 

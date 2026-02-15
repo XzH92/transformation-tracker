@@ -306,7 +306,7 @@ const CompleteCharts = ({
       <h2 style={{ marginBottom: '20px', color: '#333' }}>Tableau de bord complet</h2>
 
       <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
-        <span style={{ fontWeight: '500' }}>Periode :</span>
+        <span style={{ fontWeight: '500' }}>Période :</span>
         <select
           value={periode}
           onChange={(e) => setPeriode(e.target.value)}
@@ -322,7 +322,7 @@ const CompleteCharts = ({
 
       {/* Graphique du poids */}
       <div className="chart-card">
-        <h3 style={{ marginBottom: '15px', color: '#444' }}>Evolution du poids</h3>
+        <h3 style={{ marginBottom: '15px', color: '#444' }}>Évolution du poids</h3>
         <div className="chart-container">
           {poids.length > 0 && getPoidsChartData() ? (
             <Line data={getPoidsChartData()} options={{
@@ -347,7 +347,7 @@ const CompleteCharts = ({
             }} />
           ) : (
             <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-              <p>Aucune mesure de poids enregistree pour cette periode.</p>
+              <p>Aucune mesure de poids enregistrée pour cette période.</p>
             </div>
           )}
         </div>
@@ -355,13 +355,13 @@ const CompleteCharts = ({
 
       {/* Graphique des 12 mensurations */}
       <div className="chart-card">
-        <h3 style={{ marginBottom: '15px', color: '#444' }}>Evolution des mensurations</h3>
+        <h3 style={{ marginBottom: '15px', color: '#444' }}>Évolution des mensurations</h3>
         <div className="chart-container">
           {mensurations.length > 0 && getMensurationsChartData() ? (
             <Line data={getMensurationsChartData()} options={mensurationsOptions} />
           ) : (
             <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-              <p>Aucune mensuration enregistree pour cette periode.</p>
+              <p>Aucune mensuration enregistrée pour cette période.</p>
             </div>
           )}
         </div>
@@ -369,13 +369,13 @@ const CompleteCharts = ({
 
       {/* Graphique des entrainements */}
       <div className="chart-card">
-        <h3 style={{ marginBottom: '15px', color: '#444' }}>Progression des entrainements par exercice</h3>
+        <h3 style={{ marginBottom: '15px', color: '#444' }}>Progression des entraînements par exercice</h3>
         <div className="chart-container">
           {entrainements.length > 0 ? (
             <Line data={getEntrainementsChartData()} options={entrainementsOptions} />
           ) : (
             <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-              <p>Aucun entrainement enregistre pour cette periode.</p>
+              <p>Aucun entraînement enregistré pour cette période.</p>
             </div>
           )}
         </div>
@@ -383,13 +383,13 @@ const CompleteCharts = ({
 
       {/* Graphique des supplements */}
       <div className="chart-card">
-        <h3 style={{ marginBottom: '15px', color: '#444' }}>Tendances des supplements</h3>
+        <h3 style={{ marginBottom: '15px', color: '#444' }}>Tendances des suppléments</h3>
         <div className="chart-container">
           {supplements.length > 0 ? (
             <Bar data={getSupplementsChartData()} options={commonOptions} />
           ) : (
             <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-              <p>Aucun supplement enregistre pour cette periode.</p>
+              <p>Aucun supplément enregistré pour cette période.</p>
             </div>
           )}
         </div>

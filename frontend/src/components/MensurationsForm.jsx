@@ -39,7 +39,7 @@ const MensurationsForm = ({ onMensurationsAdded, compact = false }) => {
         mollet_gauche: '', mollet_droit: '', date_mesure: ''
       });
       setErrors({});
-      setMessage('Mensurations enregistrees !');
+      setMessage('Mensurations enregistrées !');
       setTimeout(() => setMessage(''), 3000);
       if (onMensurationsAdded) onMensurationsAdded();
     } catch (error) {
