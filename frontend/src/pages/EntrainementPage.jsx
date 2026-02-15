@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import api from '../api';
 import EntrainementForm from '../components/EntrainementForm';
 
 const EntrainementPage = ({ entrainements, onEntrainementAdded }) => {
@@ -10,7 +9,7 @@ const EntrainementPage = ({ entrainements, onEntrainementAdded }) => {
 
   const fetchRoutines = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/routines/`);
+      const response = await api.get('/routines/');
       setRoutines(response.data.routines);
     } catch (error) {
       console.error('Erreur routines:', error);
@@ -39,7 +38,7 @@ const EntrainementPage = ({ entrainements, onEntrainementAdded }) => {
         });
       }
 
-      await axios.post(`${API_BASE_URL}/routines/`, {
+      await api.post('/routines/', {
         nom,
         exercices: JSON.stringify(exercicesJson)
       });
@@ -53,7 +52,7 @@ const EntrainementPage = ({ entrainements, onEntrainementAdded }) => {
 
   const deleteRoutine = async (id) => {
     try {
-      await axios.delete(`${API_BASE_URL}/routines/${id}`);
+      await api.delete(`/routines/${id}`);
       fetchRoutines();
     } catch (error) {
       console.error('Erreur suppression routine:', error);

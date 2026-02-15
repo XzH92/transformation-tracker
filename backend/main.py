@@ -1,14 +1,18 @@
 from fastapi import FastAPI, Depends, HTTPException, Response, Request
 from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, field_validator
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional, List
 from sqlalchemy.orm import Session
-from models import SessionLocal, Poids, Mensuration, Entrainement, Supplement, JournalPhysiologique, Routine, Base, engine
+from models import SessionLocal, Poids, Mensuration, Entrainement, Supplement, JournalPhysiologique, Routine, User, Base, engine
+from passlib.context import CryptContext
+from jose import JWTError, jwt
 import csv
 import io
 import os
 import json
+import secrets
 import logging
 from dotenv import load_dotenv
 import httpx
@@ -18,6 +22,70 @@ load_dotenv()
 # Configuration du logging securise
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# --- Authentification JWT ---
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(64))
+if os.getenv("JWT_SECRET_KEY") is None:
+    logger.warning("JWT_SECRET_KEY non défini — une clé aléatoire a été générée (les tokens ne survivront pas à un redémarrage)")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))  # 24h par défaut
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(lambda: next(get_db()))):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Token invalide ou expiré",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    user = db.query(User).filter(User.username == username).first()
+    if user is None:
+        raise credentials_exception
+    return user
+
+
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
+    @field_validator('username')
+    @classmethod
+    def username_valide(cls, v):
+        v = v.strip()
+        if len(v) < 3 or len(v) > 50:
+            raise ValueError("Le nom d'utilisateur doit faire entre 3 et 50 caractères")
+        return v
+
+    @field_validator('password')
+    @classmethod
+    def password_valide(cls, v):
+        if len(v) < 8:
+            raise ValueError("Le mot de passe doit faire au moins 8 caractères")
+        return v
 
 # Modèles Pydantic avec validation
 class PoidsCreate(BaseModel):
@@ -274,9 +342,44 @@ def get_db():
     finally:
         db.close()
 
+# --- Endpoints d'authentification ---
+@app.post("/auth/register")
+def register(user_data: UserCreate, db: Session = Depends(get_db)):
+    existing = db.query(User).filter(User.username == user_data.username).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Ce nom d'utilisateur est déjà pris")
+    user = User(
+        username=user_data.username,
+        hashed_password=hash_password(user_data.password),
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    token = create_access_token(data={"sub": user.username})
+    return {"access_token": token, "token_type": "bearer"}
+
+
+@app.post("/auth/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=401,
+            detail="Nom d'utilisateur ou mot de passe incorrect",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    token = create_access_token(data={"sub": user.username})
+    return {"access_token": token, "token_type": "bearer"}
+
+
+@app.get("/auth/me")
+def get_me(current_user: User = Depends(get_current_user)):
+    return {"username": current_user.username, "id": current_user.id}
+
+
 # Endpoints pour les poids
 @app.post("/poids/")
-def ajouter_poids(poids_data: PoidsCreate, db: Session = Depends(get_db)):
+def ajouter_poids(poids_data: PoidsCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         mesure_existante = db.query(Poids).filter(Poids.date == date.fromisoformat(poids_data.date_mesure)).first()
         if mesure_existante:
@@ -297,19 +400,19 @@ def ajouter_poids(poids_data: PoidsCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Erreur lors de l'enregistrement du poids.")
 
 @app.get("/poids/")
-def lire_poids(db: Session = Depends(get_db)):
+def lire_poids(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     poids = db.query(Poids).all()
     return {"poids": poids}
 
 @app.get("/poids/{poids_id}")
-def lire_poids_par_id(poids_id: int, db: Session = Depends(get_db)):
+def lire_poids_par_id(poids_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     poids = db.query(Poids).filter(Poids.id == poids_id).first()
     if not poids:
         raise HTTPException(status_code=404, detail="Mesure de poids non trouvée")
     return {"poids": poids}
 
 @app.put("/poids/{poids_id}")
-def mettre_a_jour_poids(poids_id: int, poids_data: PoidsCreate, db: Session = Depends(get_db)):
+def mettre_a_jour_poids(poids_id: int, poids_data: PoidsCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         poids = db.query(Poids).filter(Poids.id == poids_id).first()
         if not poids:
@@ -328,7 +431,7 @@ def mettre_a_jour_poids(poids_id: int, poids_data: PoidsCreate, db: Session = De
         raise HTTPException(status_code=400, detail="Erreur lors de la mise à jour du poids.")
 
 @app.delete("/poids/{poids_id}")
-def supprimer_poids(poids_id: int, db: Session = Depends(get_db)):
+def supprimer_poids(poids_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         poids = db.query(Poids).filter(Poids.id == poids_id).first()
         if not poids:
@@ -346,7 +449,7 @@ def supprimer_poids(poids_id: int, db: Session = Depends(get_db)):
 
 # Endpoints pour les mensurations
 @app.post("/mensurations/")
-def ajouter_mensuration(mensuration_data: MensurationCreate, db: Session = Depends(get_db)):
+def ajouter_mensuration(mensuration_data: MensurationCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         mensuration_existante = db.query(Mensuration).filter(Mensuration.date == date.fromisoformat(mensuration_data.date_mesure)).first()
         if mensuration_existante:
@@ -384,19 +487,19 @@ def ajouter_mensuration(mensuration_data: MensurationCreate, db: Session = Depen
         raise HTTPException(status_code=400, detail="Erreur lors de l'enregistrement de la mensuration.")
 
 @app.get("/mensurations/")
-def lire_mensurations(db: Session = Depends(get_db)):
+def lire_mensurations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     mensurations = db.query(Mensuration).all()
     return {"mensurations": mensurations}
 
 @app.get("/mensurations/{mensuration_id}")
-def lire_mensuration_par_id(mensuration_id: int, db: Session = Depends(get_db)):
+def lire_mensuration_par_id(mensuration_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     mensuration = db.query(Mensuration).filter(Mensuration.id == mensuration_id).first()
     if not mensuration:
         raise HTTPException(status_code=404, detail="Mensuration non trouvée")
     return {"mensuration": mensuration}
 
 @app.put("/mensurations/{mensuration_id}")
-def mettre_a_jour_mensuration(mensuration_id: int, mensuration_data: MensurationCreate, db: Session = Depends(get_db)):
+def mettre_a_jour_mensuration(mensuration_id: int, mensuration_data: MensurationCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         mensuration = db.query(Mensuration).filter(Mensuration.id == mensuration_id).first()
         if not mensuration:
@@ -417,7 +520,7 @@ def mettre_a_jour_mensuration(mensuration_id: int, mensuration_data: Mensuration
         raise HTTPException(status_code=400, detail="Erreur lors de la mise à jour de la mensuration.")
 
 @app.delete("/mensurations/{mensuration_id}")
-def supprimer_mensuration(mensuration_id: int, db: Session = Depends(get_db)):
+def supprimer_mensuration(mensuration_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         mensuration = db.query(Mensuration).filter(Mensuration.id == mensuration_id).first()
         if not mensuration:
@@ -435,7 +538,7 @@ def supprimer_mensuration(mensuration_id: int, db: Session = Depends(get_db)):
 
 # Endpoints pour les entraînements
 @app.post("/entrainements/")
-def ajouter_entrainement(entrainement_data: EntrainementCreate, db: Session = Depends(get_db)):
+def ajouter_entrainement(entrainement_data: EntrainementCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         nouvel_entrainement = Entrainement(
             date=date.fromisoformat(entrainement_data.date),
@@ -458,19 +561,19 @@ def ajouter_entrainement(entrainement_data: EntrainementCreate, db: Session = De
         raise HTTPException(status_code=400, detail="Erreur lors de l'enregistrement de l'entraînement.")
 
 @app.get("/entrainements/")
-def lire_entrainements(db: Session = Depends(get_db)):
+def lire_entrainements(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     entrainements = db.query(Entrainement).all()
     return {"entrainements": entrainements}
 
 @app.get("/entrainements/{entrainement_id}")
-def lire_entrainement_par_id(entrainement_id: int, db: Session = Depends(get_db)):
+def lire_entrainement_par_id(entrainement_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     entrainement = db.query(Entrainement).filter(Entrainement.id == entrainement_id).first()
     if not entrainement:
         raise HTTPException(status_code=404, detail="Entraînement non trouvé")
     return {"entrainement": entrainement}
 
 @app.put("/entrainements/{entrainement_id}")
-def mettre_a_jour_entrainement(entrainement_id: int, entrainement_data: EntrainementCreate, db: Session = Depends(get_db)):
+def mettre_a_jour_entrainement(entrainement_id: int, entrainement_data: EntrainementCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         entrainement = db.query(Entrainement).filter(Entrainement.id == entrainement_id).first()
         if not entrainement:
@@ -495,7 +598,7 @@ def mettre_a_jour_entrainement(entrainement_id: int, entrainement_data: Entraine
         raise HTTPException(status_code=400, detail="Erreur lors de la mise à jour de l'entraînement.")
 
 @app.delete("/entrainements/{entrainement_id}")
-def supprimer_entrainement(entrainement_id: int, db: Session = Depends(get_db)):
+def supprimer_entrainement(entrainement_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         entrainement = db.query(Entrainement).filter(Entrainement.id == entrainement_id).first()
         if not entrainement:
@@ -513,7 +616,7 @@ def supprimer_entrainement(entrainement_id: int, db: Session = Depends(get_db)):
 
 # Endpoints pour les suppléments
 @app.post("/supplements/")
-def ajouter_supplement(supplement_data: SupplementCreate, db: Session = Depends(get_db)):
+def ajouter_supplement(supplement_data: SupplementCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         date_debut = None
         date_fin = None
@@ -543,19 +646,19 @@ def ajouter_supplement(supplement_data: SupplementCreate, db: Session = Depends(
         raise HTTPException(status_code=400, detail="Erreur lors de l'enregistrement du supplément.")
 
 @app.get("/supplements/")
-def lire_supplements(db: Session = Depends(get_db)):
+def lire_supplements(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     supplements = db.query(Supplement).all()
     return {"supplements": supplements}
 
 @app.get("/supplements/{supplement_id}")
-def lire_supplement_par_id(supplement_id: int, db: Session = Depends(get_db)):
+def lire_supplement_par_id(supplement_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     supplement = db.query(Supplement).filter(Supplement.id == supplement_id).first()
     if not supplement:
         raise HTTPException(status_code=404, detail="Supplément non trouvé")
     return {"supplement": supplement}
 
 @app.put("/supplements/{supplement_id}")
-def mettre_a_jour_supplement(supplement_id: int, supplement_data: SupplementCreate, db: Session = Depends(get_db)):
+def mettre_a_jour_supplement(supplement_id: int, supplement_data: SupplementCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         supplement = db.query(Supplement).filter(Supplement.id == supplement_id).first()
         if not supplement:
@@ -588,7 +691,7 @@ def mettre_a_jour_supplement(supplement_id: int, supplement_data: SupplementCrea
         raise HTTPException(status_code=400, detail="Erreur lors de la mise à jour du supplément.")
 
 @app.delete("/supplements/{supplement_id}")
-def supprimer_supplement(supplement_id: int, db: Session = Depends(get_db)):
+def supprimer_supplement(supplement_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         supplement = db.query(Supplement).filter(Supplement.id == supplement_id).first()
         if not supplement:
@@ -606,7 +709,7 @@ def supprimer_supplement(supplement_id: int, db: Session = Depends(get_db)):
 
 # Endpoints pour le journal physiologique
 @app.post("/journal/")
-def ajouter_journal(journal_data: JournalPhysiologiqueCreate, db: Session = Depends(get_db)):
+def ajouter_journal(journal_data: JournalPhysiologiqueCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         nouvel_entree = JournalPhysiologique(
             date=date.fromisoformat(journal_data.date),
@@ -628,19 +731,19 @@ def ajouter_journal(journal_data: JournalPhysiologiqueCreate, db: Session = Depe
         raise HTTPException(status_code=400, detail="Erreur lors de l'enregistrement du journal.")
 
 @app.get("/journal/")
-def lire_journal(db: Session = Depends(get_db)):
+def lire_journal(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     entrees = db.query(JournalPhysiologique).all()
     return {"journal": entrees}
 
 @app.get("/journal/{journal_id}")
-def lire_journal_par_id(journal_id: int, db: Session = Depends(get_db)):
+def lire_journal_par_id(journal_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     entree = db.query(JournalPhysiologique).filter(JournalPhysiologique.id == journal_id).first()
     if not entree:
         raise HTTPException(status_code=404, detail="Entrée de journal non trouvée")
     return {"entree": entree}
 
 @app.put("/journal/{journal_id}")
-def mettre_a_jour_journal(journal_id: int, journal_data: JournalPhysiologiqueCreate, db: Session = Depends(get_db)):
+def mettre_a_jour_journal(journal_id: int, journal_data: JournalPhysiologiqueCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         entree = db.query(JournalPhysiologique).filter(JournalPhysiologique.id == journal_id).first()
         if not entree:
@@ -664,7 +767,7 @@ def mettre_a_jour_journal(journal_id: int, journal_data: JournalPhysiologiqueCre
         raise HTTPException(status_code=400, detail="Erreur lors de la mise à jour du journal.")
 
 @app.delete("/journal/{journal_id}")
-def supprimer_journal(journal_id: int, db: Session = Depends(get_db)):
+def supprimer_journal(journal_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         entree = db.query(JournalPhysiologique).filter(JournalPhysiologique.id == journal_id).first()
         if not entree:
@@ -682,12 +785,12 @@ def supprimer_journal(journal_id: int, db: Session = Depends(get_db)):
 
 # Endpoints pour les routines
 @app.get("/routines/")
-def lire_routines(db: Session = Depends(get_db)):
+def lire_routines(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     routines = db.query(Routine).all()
     return {"routines": routines}
 
 @app.post("/routines/")
-def ajouter_routine(routine_data: RoutineCreate, db: Session = Depends(get_db)):
+def ajouter_routine(routine_data: RoutineCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         routine_existante = db.query(Routine).filter(Routine.nom == routine_data.nom).first()
         if routine_existante:
@@ -713,7 +816,7 @@ def ajouter_routine(routine_data: RoutineCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Erreur lors de l'enregistrement de la routine.")
 
 @app.put("/routines/{routine_id}")
-def mettre_a_jour_routine(routine_id: int, routine_data: RoutineCreate, db: Session = Depends(get_db)):
+def mettre_a_jour_routine(routine_id: int, routine_data: RoutineCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         routine = db.query(Routine).filter(Routine.id == routine_id).first()
         if not routine:
@@ -732,7 +835,7 @@ def mettre_a_jour_routine(routine_id: int, routine_data: RoutineCreate, db: Sess
         raise HTTPException(status_code=400, detail="Erreur lors de la mise à jour de la routine.")
 
 @app.delete("/routines/{routine_id}")
-def supprimer_routine(routine_id: int, db: Session = Depends(get_db)):
+def supprimer_routine(routine_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         routine = db.query(Routine).filter(Routine.id == routine_id).first()
         if not routine:
@@ -752,7 +855,7 @@ def read_root():
     return {"message": "Bienvenue sur l'API de suivi de transformation physique !"}
 
 @app.get("/export-csv/")
-def export_csv(db: Session = Depends(get_db)):
+def export_csv(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Exporte toutes les données de poids et mensurations au format CSV.
     
@@ -842,7 +945,8 @@ class AnalyseRequest(BaseModel):
           response_description="Analyse détaillée et conseils basés sur vos données")
 async def analyse(
     request_data: AnalyseRequest,
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """
     Analyse les données de transformation physique avec l'API Mistral AI.

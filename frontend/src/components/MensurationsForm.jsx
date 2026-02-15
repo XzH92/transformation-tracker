@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import api from '../api';
 
 const MensurationsForm = ({ onMensurationsAdded, compact = false }) => {
   const [nouvelleMensuration, setNouvelleMensuration] = useState({
@@ -32,7 +31,7 @@ const MensurationsForm = ({ onMensurationsAdded, compact = false }) => {
           dataToSend[key] = parseFloat(dataToSend[key]);
         }
       });
-      await axios.post(`${API_BASE_URL}/mensurations/`, dataToSend);
+      await api.post('/mensurations/', dataToSend);
       setNouvelleMensuration({
         cou: '', epaules: '', poitrine: '', nombril: '', taille: '', hanches: '',
         biceps_gauche: '', biceps_droit: '', cuisse_gauche: '', cuisse_droite: '',
